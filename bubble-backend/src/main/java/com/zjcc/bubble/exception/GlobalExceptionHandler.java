@@ -1,0 +1,42 @@
+package com.zjcc.bubble.exception;
+
+import com.zjcc.bubble.common.BaseResponse;
+import com.zjcc.bubble.common.ErrorCode;
+import com.zjcc.bubble.common.ResponseResult;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+/**
+ * @author zjchenchang
+ * @createDate 2026/1/12 16:03
+ * @description 全局异常处理器 捕捉代码所有异常 集中处理
+ * 否则代码中抛异常，前端只返回500(http状态码--服务器内部错误)
+ * 前端能获取到更精准的错误提示，便于问题排查
+ */
+@RestControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(BusinessException.class)
+    public BaseResponse<?> businessExceptionHandler(BusinessException e) {
+        log.error("businessException: " + e.getMessage(), e);
+        return ResponseResult.error(e.getCode(), e.getMessage(), e.getDescription());
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public BaseResponse<?> businessExceptionHandler(RuntimeException e) {
+        log.error("runtimeException", e);
+        return ResponseResult.error(ErrorCode.SYSTEM_ERROR,e.getMessage(),"");
+    }
+
+
+    // 依靠MySQL 唯一性索引 兜底。可保证并发情况下，侥幸通过注册判重逻辑的 重复注册行为
+    @ExceptionHandler(DuplicateKeyException.class)
+    public BaseResponse handleDuplicateKeyException(DuplicateKeyException e) {
+        log.error("数据重复，{}", e.getMessage());
+        return ResponseResult.error(ErrorCode.PARAMS_ERROR, "用户账户或星球编号已存在");
+    }
+
+}
