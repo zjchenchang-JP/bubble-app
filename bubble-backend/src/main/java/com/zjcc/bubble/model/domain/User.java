@@ -84,4 +84,9 @@ public class User {
      * 用户编号
      */
     private String planetCode;
+
+    /**
+     * 标签列表（json字符串）
+     */
+    private String tags;
 }

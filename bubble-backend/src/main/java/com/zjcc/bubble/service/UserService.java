@@ -4,6 +4,7 @@ import com.zjcc.bubble.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author 86187
@@ -32,9 +33,33 @@ public interface UserService extends IService<User> {
 
     /**
      * 用户注销
-     *
      * @param request servlet请求对象
      * @return 注销成功标志
      */
     boolean userLogout(HttpServletRequest request);
+
+    /**
+     * Desensitization 用户脱敏
+     * @param originUser 登录用户
+     * @return safetyUser  信息脱敏后的用户
+     */
+    User getSafetyUser(User originUser);
+
+    /**
+     * 根据标签搜索用户
+     *
+     * @param tagNameList 标签列表
+     * @return 根据标签搜索到的用户
+     */
+    List<User> searchUsersByTags(List<String> tagNameList);
+
+    /**
+     * 根据标签搜索用户（内存查询方式）
+     * @param tagNameList 标签列表
+     * @return 根据标签搜索到的用户
+     * 避免SQL join 性能优化的一种方案
+     */
+    List<User> searchUsersByTagsMemory(List<String> tagNameList);
+
 }
+
