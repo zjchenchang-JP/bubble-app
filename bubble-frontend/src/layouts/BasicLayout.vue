@@ -4,7 +4,7 @@
         left-text=""
         left-arrow
         @click-left="onClickLeft"
-        @click-right="onClickRight"
+        @click-right="onClickSearch"
     >
         <template #right>
             <van-icon name="search" size="18" />
@@ -23,9 +23,14 @@
 <script setup lang="ts">
 import { showToast } from 'vant';
 import { ref } from 'vue';
-
-const onClickLeft = () => alert("左");
-const onClickRight = () => alert("右");
+import { useRouter } from 'vue-router';
+const router = useRouter()
+const onClickLeft = () => {
+    router.push('/')
+}
+const onClickSearch = () => {
+    router.push('/search')
+};
 
 // 默认选中 高亮
 const onChange = (index: any) => showToast(`标签 ${index}`);
