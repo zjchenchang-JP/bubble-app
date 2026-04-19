@@ -1,11 +1,5 @@
 <template>
-    <van-nav-bar
-        title="标题"
-        left-text=""
-        left-arrow
-        @click-left="onClickLeft"
-        @click-right="onClickSearch"
-    >
+    <van-nav-bar title="标题" left-text="" left-arrow @click-left="onClickLeft" @click-right="onClickSearch">
         <template #right>
             <van-icon name="search" size="18" />
         </template>
@@ -26,7 +20,8 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter()
 const onClickLeft = () => {
-    router.push('/')
+    // router.push('/') // 回到主页
+    router.back() // 回到上一页
 }
 const onClickSearch = () => {
     router.push('/search')
@@ -38,6 +33,4 @@ const onChange = (index: any) => showToast(`标签 ${index}`);
 </script>
 
 
-<style scoped>
-
-</style>
+<style scoped></style>

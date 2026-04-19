@@ -1,7 +1,7 @@
 <template>
     <form action="/">
         <van-search
-            v-model="value"
+            v-model="searchText"
             show-action
             placeholder="请输入想要搜索的标签"
             @search="onSearch"
@@ -31,21 +31,8 @@
 import { ref } from 'vue';
 import { showToast } from 'vant';
 
-const value = ref('');
-const onSearch = (val) => showToast(val);
-const onCancel = () => showToast('取消');
-// 移除标签
-const doClose = (tag) => {
-    activeIds.value = activeIds.value.filter(item => {
-        // tag 是被close掉的标签
-        // 用户点击标签关闭按钮 → @close 事件触发 → doClose(tag) 被调用
-        // → filter 过滤掉该 tag → activeIds.value 更新 
-        // → 双向绑定触发 → van-tree-select 自动取消选中该标签
-        // filter创建一个新数组, 只保留不等于被点击 tag 的元素
-        return item != tag
-    })
-}
-
+const searchText = ref('');
+// Tree-select中已选中的标签
 const activeIds = ref([]);
 const activeIndex = ref(0);
 const originTagList = [
@@ -70,6 +57,22 @@ const originTagList = [
 // 标签列表
 let tagList = ref(originTagList);
 // 搜索过滤 标签
+
+
+const onSearch = (val) => showToast(val);
+const onCancel = () => showToast('取消');
+
+// 移除标签
+const doClose = (tag) => {
+    activeIds.value = activeIds.value.filter(item => {
+        // tag 是被close掉的标签
+        // 用户点击标签关闭按钮 → @close 事件触发 → doClose(tag) 被调用
+        // → filter 过滤掉该 tag → activeIds.value 更新 
+        // → 双向绑定触发 → van-tree-select 自动取消选中该标签
+        // filter创建一个新数组, 只保留不等于被点击 tag 的元素
+        return item != tag
+    })
+}
 
 
 
