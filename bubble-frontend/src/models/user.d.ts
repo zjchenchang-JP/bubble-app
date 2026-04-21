@@ -10,6 +10,7 @@ export type CurrentUser = {
     // 常用于接口或类型定义中描述非必填的用户头像链接。
     avatarUrl?: string;
     gender: number;
+    profiel?: string;
     phone: string;
     email: string;
     userStatus: number;
