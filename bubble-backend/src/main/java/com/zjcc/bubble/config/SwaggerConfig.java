@@ -19,7 +19,8 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
  */
 @Configuration
 @EnableSwagger2 // 开启 swagger2 的自动配置
-@Profile({"dev", "test"})   //版本控制访问
+//控制该配置类在哪个环境生效 避免生产环境暴露文档接口地址
+@Profile({"dev", "test"}) // knife4j http://localhost:8080/doc.html
 public class SwaggerConfig {
 
     @Bean(value = "defaultApi2")

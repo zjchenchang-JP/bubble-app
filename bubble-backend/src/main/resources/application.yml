@@ -14,7 +14,7 @@ spring:
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
   profiles:
-    active: dev
+    active: dev # 默认环境
 #    cookie:
 #      # 关键1：绑定到前端访问的域名（必须和前端一致）
 #      domain: 43.163.195.79
