@@ -39,6 +39,11 @@ public class User {
     private Integer gender;
 
     /**
+     * 个人简介
+     */
+    private String profile;
+
+    /**
      * 密码（建议加密存储）
      */
     private String userPassword;

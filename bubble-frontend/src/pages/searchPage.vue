@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { showToast } from 'vant';
 import { useRouter } from 'vue-router';
 const router = useRouter()
@@ -88,6 +88,7 @@ const doSearchResult = () => {
         }
     })
 }
+
 
 
 </script>

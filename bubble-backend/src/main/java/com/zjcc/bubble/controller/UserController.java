@@ -11,11 +11,13 @@ import com.zjcc.bubble.model.domain.UserRegisterRequest;
 import com.zjcc.bubble.service.UserService;
 import com.zjcc.bubble.service.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +26,7 @@ import static com.zjcc.bubble.utils.StaticConst.USER_LOGIN_STATE;
 
 @RestController
 // 临时解决跨越问题
+// @CrossOrigin // 默认支持所有网站都能跨域访问 *
 @CrossOrigin(origins = {"http://localhost:5173","http://localhost:3000", "http://43.163.195.79","https://tracheoscopic-collectedly-barb.ngrok-free.dev"}, allowCredentials = "true")
 @RequestMapping("/api/user")
 @Slf4j
@@ -106,6 +109,17 @@ public class UserController {
         // 脱敏后返回
         List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
         return ResponseResult.ok(users);
+    }
+
+    // 根据标签名搜索用户
+    @GetMapping("/search/tags")
+    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            log.warn("未传入标签 !");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        List<User> userList = userService.searchUsersByTags(tagNameList);
+        return ResponseResult.ok(userList);
     }
 
     // 删除用户
