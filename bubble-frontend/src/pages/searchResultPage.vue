@@ -72,7 +72,7 @@ onMounted(async() =>{
             // 在搜索请求成功/失败时弹出轻量提示（toast）
             showToast({ type: 'success', message: '请求成功' });
             //返回数据  ?.可选链操作符，避免数据为null或undefined时报错
-            return response.data?.data; 
+            return response?.data;
         })
         .catch(function (error) {
             console.log('/user/search/tags error',error);
@@ -94,7 +94,7 @@ onMounted(async() =>{
                     // 后端 User.tags  →  JSON: {"tags": "[\"java\"]"}  →  前端 user.tags
                     // 如果前端想用不同的名字，比如 userLabels，就需要手动映射
                     // user.userLabels = JSON.parse(user.tags)
-                    // 或者让后端返回时用 @JsonProperty("userLabels") 改名字
+                    // 或者后端返回时用 @JsonProperty("userLabels") 改名字
                     // 又或者定义一个前端 VO（视图对象）来做字段映射。
                     // 但最简单的做法就是前后端字段名保持一致，省去转换的麻烦
                     user.tags = JSON.parse(user.tags);
