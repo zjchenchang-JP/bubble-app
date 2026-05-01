@@ -242,3 +242,107 @@ if (freshUser != null) {
 4. **排查"数据不更新"问题**：先看 Network 面板确认是前端还是后端返回了旧数据，不要在前端盲猜
 5. **Session 中存储的 Java 对象是登录时的快照**，不会随数据库变化自动更新，涉及用户信息修改的接口要注意同步 Session
 6. **TypeScript `verbatimModuleSyntax`** 要求类型导入必须用 `import type`，值导入和类型导入不能混用
+
+---
+# 2026/05/01
+
+## Axios 传参详解：params vs data
+
+### withCredentials
+
+`withCredentials` 控制跨域请求是否携带 Cookie 和 HTTP 认证信息：
+
+- `true`：跨域请求带上 Cookie，后端需配置 `Access-Control-Allow-Credentials: true`，且 `Allow-Origin` 不能是 `*`
+- `false`（默认值）：跨域请求不带 Cookie，更安全，后端配置更简单
+
+前后端分离项目用 Token 认证（header 里带 token）时，设为 `false` 就够了。
+
+---
+
+### GET 请求：只有 params
+
+GET 没有请求体，参数只能通过 `params` 拼接到 URL 查询字符串：
+
+```js
+// axios.get(url, config)
+axios.get("/user/recommend", {
+  params: {
+    pageSize: 8,
+    pageNum: 1,
+  },
+  withCredentials: false
+})
+
+// 实际发出的请求：GET /user/recommend?pageSize=8&pageNum=1
+```
+
+---
+
+### POST 请求：data（请求体） + params（URL查询参数）
+
+POST 可以同时用 `data` 和 `params`：
+
+```js
+// axios.post(url, data, config)
+axios.post("/user/search", {
+  username: "zhangsan",
+  password: "123456"
+}, {
+  params: {
+    pageNum: 1,
+    pageSize: 10
+  },
+  withCredentials: false
+})
+
+// 实际发出的请求：
+// POST /user/search?pageNum=1&pageSize=10
+// Content-Type: application/json
+//
+// {"username":"zhangsan","password":"123456"}
+```
+- data → 放在请求体里
+- params → 拼到 URL 查询字符串上
+典型场景： 比如搜索接口，查询条件（关键词、筛选器）放 data 里，分页参数（pageNum、pageSize）放 params 里
+
+后端接收方式：
+
+```java
+@PostMapping("/search")
+public Result search(
+    @RequestBody UserQuery query,    // 对应 data（请求体）
+    @RequestParam Integer pageNum,    // 对应 params（URL查询参数）
+    @RequestParam Integer pageSize    // 对应 params
+) { ... }
+```
+
+---
+
+### data 的常见语法形式
+
+```js
+// 1. JSON 对象（默认，Content-Type: application/json）
+data: { username: "zhangsan", password: "123456" }
+
+// 2. URLSearchParams（Content-Type: application/x-www-form-urlencoded）
+data: new URLSearchParams({ username: "zhangsan", password: "123456" })
+
+// 3. FormData（用于上传文件，Content-Type: multipart/form-data）
+const fd = new FormData();
+fd.append("username", "zhangsan");
+fd.append("avatar", file);
+data: fd
+
+// 4. 直接传字符串（少见）
+data: JSON.stringify({ username: "zhangsan" })
+```
+
+---
+
+### 对比总结
+
+| 属性 | GET | POST |
+|---|---|---|
+| `params` | 拼接到 URL 查询字符串（`?key=value`） | 同左，拼到 URL 上 |
+| `data` | 被忽略，GET 没有请求体 | 放到请求体（request body）里 |
+| 惯例 | 只用 `params` | 用 `data`，分页参数可放 `params` |
