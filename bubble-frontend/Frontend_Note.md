@@ -346,3 +346,407 @@ data: JSON.stringify({ username: "zhangsan" })
 | `params` | 拼接到 URL 查询字符串（`?key=value`） | 同左，拼到 URL 上 |
 | `data` | 被忽略，GET 没有请求体 | 放到请求体（request body）里 |
 | 惯例 | 只用 `params` | 用 `data`，分页参数可放 `params` |
+
+--- 
+# 2026/05/04
+## bubble-app项目涉及路由（router、route）知识
+
+### 一、项目路由架构总览
+
+```
+main.ts (创建并挂载 router)
+  └── config/route.ts (路由表定义)
+       └── App.vue
+            └── BasicLayout.vue (布局组件)
+                 ├── <router-view /> (页面出口)
+                 ├── <van-tabbar route> (声明式导航)
+                 └── 各页面组件 (编程式导航)
+```
+
+---
+
+### 二、路由创建与挂载 — main.ts
+
+```typescript
+import * as VueRouter from 'vue-router'
+import routes from "./config/route"
+
+// 创建路由实例，使用 Hash 模式
+const router = VueRouter.createRouter({
+    history: VueRouter.createWebHashHistory(),  // URL 中带 # 号
+    routes,                                      // 路由规则
+})
+app.use(router)  // 注册到 Vue 应用
+```
+
+**History 模式对比：**
+
+| History 模式 | URL 样式 | 特点 |
+|---|---|---|
+| `createWebHashHistory()` | `http://xxx/#/user` | 无需后端配置，项目当前使用 |
+| `createWebHistory()` | `http://xxx/user` | URL 更美观，但需要后端配合配置 Nginx 回退 |
+| `createMemoryHistory()` | 无 URL 变化 | 适用于非浏览器环境 (SSR / 嵌入式) |
+
+**延伸：** 如果要切换为 History 模式，将 `createWebHashHistory()` 改为 `createWebHistory()`，同时在 `vite.config.ts` 中配置开发服务器：
+```typescript
+server: { historyApiFallback: true }
+```
+
+---
+
+### 三、路由表定义 — config/route.ts
+
+```typescript
+import type { RouteRecordRaw } from 'vue-router';
+import Index from '../pages/Index.vue';
+// ... 其他页面导入
+
+const routes: RouteRecordRaw[] = [
+    { path: '/',        component: Index },
+    { path: '/team',    component: TeamPage },
+    { path: '/user',    component: UserPage },
+    { path: '/search',  component: SearchPage },
+    { path: '/user/list',  component: SearchResultPage },
+    { path: '/user/edit',  component: UserEditPage },
+    { path: '/user/login', component: UserLoginPage },
+]
+export default routes
+```
+
+项目中使用了最基础的静态路由配置。延伸的配置项：
+
+```typescript
+// 1. 嵌套路由（子路由）
+{
+  path: '/user',
+  component: BasicLayout,
+  children: [
+    { path: '',         component: UserPage },      // /user
+    { path: 'edit',     component: UserEditPage },   // /user/edit
+    { path: 'login',    component: UserLoginPage },  // /user/login
+  ]
+}
+
+// 2. 动态路由（路径参数）
+{ path: '/user/:id', component: UserProfile }
+// 访问 /user/2767 → route.params.id === '2767'
+
+// 3. 命名路由 + 重定向
+{
+  path: '/home',
+  redirect: '/'       // 访问 /home 自动跳转到 /
+}
+{
+  path: '/user/:id',
+  name: 'userDetail',
+  component: UserProfile
+}
+
+// 4. 懒加载（按需加载，减小首屏体积）
+{ path: '/team', component: () => import('../pages/TeamPage.vue') }
+
+// 5. 路由元信息（配合路由守卫使用）
+{
+  path: '/user',
+  component: UserPage,
+  meta: { requiresAuth: true, title: '个人中心' }
+}
+```
+
+---
+
+### 四、`<router-view />` — 路由出口
+
+BasicLayout.vue:
+```vue
+<div id="content">
+    <router-view />  <!-- 当前路由匹配的组件渲染在这里 -->
+</div>
+```
+
+`<router-view />` 是路由匹配组件的渲染出口。当 URL 变为 `/user` 时，`UserPage.vue` 就渲染在这个位置。
+
+延伸用法：
+
+```vue
+<!-- 命名视图：同一页面渲染多个 router-view -->
+<router-view />              <!-- 默认出口 -->
+<router-view name="sidebar" /> <!-- 侧边栏出口 -->
+
+<!-- transition 包裹实现路由切换动画 -->
+<router-view v-slot="{ Component }">
+  <transition name="fade" mode="out-in">
+    <component :is="Component" />
+  </transition>
+</router-view>
+```
+
+---
+
+### 五、声明式导航 — `<router-link>` / Vant Tabbar
+
+BasicLayout.vue:
+```vue
+<!-- Vant 的 Tabbar 组件，添加 route 属性即可使用路由模式 -->
+<van-tabbar route>
+    <van-tabbar-item icon="home-o" to="/">主页</van-tabbar-item>
+    <van-tabbar-item icon="search" name="team" to="/team">队伍</van-tabbar-item>
+    <van-tabbar-item icon="friends-o" name="user" to="/user">个人</van-tabbar-item>
+</van-tabbar>
+```
+
+`to` 属性支持字符串或对象形式：
+
+```vue
+<!-- 字符串形式 -->
+<van-tabbar-item to="/user">个人</van-tabbar-item>
+
+<!-- 对象形式（可携带参数） -->
+<van-tabbar-item :to="{ path: '/user', query: { from: 'tab' } }">个人</van-tabbar-item>
+
+<!-- 命名路由形式 -->
+<van-tabbar-item :to="{ name: 'userDetail', params: { id: 2767 } }">个人</van-tabbar-item>
+```
+
+**注意：** Vant 的 `<van-tabbar>` 加上 `route` 属性后，其内部的 `<van-tabbar-item>` 会自动渲染为 `<router-link>`，无需手动包裹。
+
+---
+
+### 六、编程式导航 — `useRouter()`
+
+`router` 实例用于**执行跳转**（写操作），在本项目中有三种典型用法：
+
+#### 1. `router.push()` — 跳转到新页面（保留历史记录）
+
+BasicLayout.vue — 导航到搜索页：
+```typescript
+const router = useRouter()
+const onClickSearch = () => {
+    router.push('/search')   // 等价于 router.push({ path: '/search' })
+}
+```
+
+UserPage.vue — 携带 query 参数跳转：
+```typescript
+const toEdit = (editKey: keyof CurrentUser, editName: string, currentValue: string) => {
+  router.push({
+    path: "/user/edit",
+    query: {
+      editKey,      // 编辑字段名
+      editName,     // 编辑字段中文名
+      currentValue, // 当前值
+    },
+  });
+};
+```
+
+searchPage.vue — 携带数组参数：
+```typescript
+const doSearchResult = () => {
+    router.push({
+        path: '/user/list',
+        query: { tags: activeIds.value }   // 数组: tags=男&tags=大一
+    })
+}
+```
+
+**`push` 的三种参数格式：**
+
+```typescript
+// (1) 字符串
+router.push('/user')
+
+// (2) 对象 — path 形式（注意：path 和 params 不能同时用）
+router.push({ path: '/user', query: { id: 1 } })
+
+// (3) 对象 — name 形式（可以搭配 params）
+router.push({ name: 'userDetail', params: { id: 1 } })
+```
+
+**重要区别：** `query` 参数显示在 URL 上 (`?editKey=username&editName=昵称`)，`params` 参数不显示在 URL 上。本项目全部使用 `query`。
+
+#### 2. `router.back()` — 返回上一页
+
+BasicLayout.vue：
+```typescript
+const onClickLeft = () => {
+    router.back()   // 等价于 router.go(-1)，返回浏览器历史栈的上一页
+}
+```
+
+UserEditPage.vue — 修改成功后返回：
+```typescript
+if (res.code === 0 && res.data > 0) {
+    showSuccessToast("修改成功");
+    router.back()    // 编辑完成 → 返回个人页
+}
+```
+
+#### 3. `router.replace()` — 替换当前页面（不保留历史记录）
+
+UserLoginPage.vue — 登录后跳转：
+```typescript
+const onSubmit = async () => {
+  // ...
+  if (res.code === 0 && res.data) {
+    showSuccessToast("登录成功");
+    router.replace("/")   // 替换：用户无法通过"后退"回到登录页
+  }
+};
+```
+
+**push vs replace 核心区别：**
+- `push` → 在历史栈中**新增**一条记录，用户可以点浏览器"后退"回到之前的页面
+- `replace` → **替换**当前历史记录，用户"后退"时不会回到被替换的页面
+
+**登录成功用 `replace` 的原因：** 登录页不应该出现在浏览器历史中，否则用户登录后点后退又会回到登录页。
+
+---
+
+### 七、路由信息读取 — `useRoute()`
+
+`route` 对象用于**读取**当前路由信息（只读），在本项目中有三个典型用法：
+
+#### 1. UserEditPage.vue — 读取 query 参数并用于表单
+```typescript
+const route = useRoute();
+
+const editUser = ref({
+  editKey: route.query.editKey,      // "username"
+  currentValue: route.query.currentValue,  // "ZJCC"
+  editName: route.query.editName,    // "昵称"
+});
+```
+
+#### 2. searchResultPage.vue — 读取搜索标签
+```typescript
+const route = useRoute();
+const tags = route.query.tags   // ['男', '大一'] — 从搜索页传来的标签数组
+```
+
+#### 3. UserPage.vue — 监听路由变化，重新请求数据
+```typescript
+const route = useRoute();
+
+watch(() => route.path, () => {
+  if (route.path === "/user") fetchUser();
+});
+```
+
+**`route` 对象的常用属性：**
+
+| 属性 | 类型 | 示例值 | 说明 |
+|---|---|---|---|
+| `route.path` | `string` | `'/user/edit'` | 当前路径 |
+| `route.fullPath` | `string` | `'/user/edit?editKey=username'` | 完整路径含 query |
+| `route.query` | `object` | `{ editKey: 'username' }` | URL 问号后的参数 |
+| `route.params` | `object` | `{ id: '2767' }` | 路径中的动态参数 |
+| `route.name` | `string` | `'userDetail'` | 当前路由的命名 |
+| `route.meta` | `object` | `{ requiresAuth: true }` | 路由元信息 |
+
+---
+
+### 八、`route` 与 `router` 的核心区别
+
+**Route = 当前在哪（读），Router = 去哪里（写）**
+
+```
+useRoute()  → 当前路由信息对象（只读）
+               属性: path, query, params, meta, fullPath, name
+
+useRouter() → 路由器实例（可操作）
+               方法: push(), replace(), back(), go(), forward()
+               方法: addRoute(), removeRoute()  (动态路由)
+```
+
+本项目中所有的路由调用一览：
+
+| 文件 | 使用 | 目的 |
+|---|---|---|
+| BasicLayout.vue | `useRouter` | `back()`, `push('/search')` |
+| UserPage.vue | `useRouter` + `useRoute` | `push({query})`, `watch(route.path)` |
+| searchPage.vue | `useRouter` | `push({query: tags})` |
+| searchResultPage.vue | `useRoute` | 读取 `route.query.tags` |
+| UserEditPage.vue | `useRouter` + `useRoute` | 读取 query, `back()` |
+| UserLoginPage.vue | `useRouter` | `replace('/')` |
+| Index.vue | `useRoute` | 读取 query |
+
+---
+
+### 九、延伸：项目中尚未使用但值得了解的路由功能
+
+#### 1. 全局路由守卫（本项目的下一步建议）
+
+```typescript
+// main.ts 中添加
+router.beforeEach((to, from, next) => {
+  // 设置页面标题
+  document.title = (to.meta.title as string) || 'Bubble 伙伴'
+
+  // 未登录拦截
+  if (to.meta.requiresAuth && !isLoggedIn()) {
+    next({ path: '/user/login', query: { redirect: to.fullPath } })
+  } else {
+    next()
+  }
+})
+```
+
+#### 2. 路由懒加载（优化首屏性能）
+
+```typescript
+// 当前：所有页面一次性打包
+{ path: '/team', component: TeamPage }
+
+// 优化：按需加载，每个页面单独生成 chunk
+{ path: '/team', component: () => import('../pages/TeamPage.vue') }
+```
+
+#### 3. 动态路由（权限控制场景）
+
+```typescript
+// 根据用户角色动态添加路由
+router.addRoute({
+  path: '/admin',
+  component: () => import('../pages/Admin.vue'),
+  meta: { requiresAuth: true, role: 'admin' }
+})
+```
+
+#### 4. 404 兜底路由
+
+```typescript
+// 放在路由表最后
+{ path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
+```
+
+---
+# 2026/05/06
+## JavaScript 的展开运算符（spread syntax）。
+
+> {...initFormData} 的作用是把 initFormData 对象里的所有属性复制一份到一个新对象中：
+```typescript
+const initFormData = {
+  name: "",
+  description: "",
+  maxNum: 0,
+}
+
+const addTeamData = ref({...initFormData})
+// 等价于：
+const addTeamData = ref({
+  name: "",
+  description: "",
+  maxNum: 0,
+})
+
+```
+> 为什么要用 ... 而不是直接写 ref(initFormData)？
+> 为了解耦。直接引用的话，addTeamData 和 initFormData 指向同一个对象，修改其中一个会影响另一个。用 ... 展开后创建的是一个全新的对象，两者互不影响。
+> 这样以后可以用 initFormData 来重置表单
+> 
+```typescript
+const resetForm = () => {
+  addTeamData.value = {...initFormData}  // 恢复到初始状态
+}
+```

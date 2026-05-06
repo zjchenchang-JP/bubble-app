@@ -58,7 +58,7 @@ const fetchUser = async () => {
   const res = await getCurrentUser();
   if (res) {
     user.value = res;
-    showSuccessToast("获取用户信息成功");
+    // showSuccessToast("获取用户信息成功");
   } else {
     showFailToast("获取用户信息失败");
   }

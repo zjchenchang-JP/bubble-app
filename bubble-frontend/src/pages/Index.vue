@@ -17,9 +17,8 @@ onMounted(async () => {
   // myAxios 请求 url + 请求参数
   const userListData = await myAxios.get("/user/recommend", {
     // false（默认值）：跨域请求不带 Cookie，更安全
-    // 一般前后端分离项目、
-    // 用 Token 认证（header 里带 token）时，设为 false 就够了  
-    withCredentials: false, 
+    // 一般前后端分离项目、用 Token 认证的话（header 里带 token）时，设为 false 就可以  
+    withCredentials: true, 
     // GET 请求传参只能用 params，不能用 data; 
     // Axios 会自动把 params 对象拼接到 URL 查询字符串上
       params: { 
@@ -42,6 +41,7 @@ onMounted(async () => {
       // undefined 也是false
       userListData.forEach((user) => {
         if (user.tags) {
+          // 后端数据库tags是数组[]，前端规定需要字符串
           user.tags = JSON.parse(user.tags);
         }
       });

@@ -1,6 +1,7 @@
 import Index from '../pages/Index.vue';
 import SearchPage from '../pages/searchPage.vue';
 import SearchResultPage from '../pages/searchResultPage.vue';
+import TeamAddPage from '../pages/TeamAddPage.vue';
 import TeamPage from '../pages/TeamPage.vue';
 import UserEditPage from '../pages/UserEditPage.vue';
 import UserLoginPage from '../pages/UserLoginPage.vue';
@@ -16,6 +17,7 @@ const routes: RouteRecordRaw[] = [
     {path: '/user/list',component: SearchResultPage},
     {path: '/user/edit',component: UserEditPage},
     {path: '/user/login',component: UserLoginPage},
+    {path: '/team/add',component: TeamAddPage},
 ]
 
 export default routes
