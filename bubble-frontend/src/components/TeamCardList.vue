@@ -2,25 +2,43 @@
  * 几个页面都用到了列表组件，提取成可复用公共组件
 */
 <template>
+  <div id="teamCardList">
   <van-card
-      v-for="user in props.teamList"
-      :desc="user.profile"
-      :title="`${user.username} (${user.planetCode})`"
-      :thumb="user.avatarUrl"
+      v-for="team in props.teamList"
+      :thumb="weiwei"
+      :desc="team.description"
+      :title="`${team.name}`"
   >
     <template #tags>
-      <van-tag plain type="danger" v-for="tag in user.tags" style="margin-right: 8px; margin-top: 8px" >
-        {{ tag }}
+      <van-tag plain type="danger" style="margin-right: 8px; margin-top: 8px" >
+        {{ teamStatusEnum[team.status] }}
       </van-tag>
     </template>
+    <template #bottom>
+      <div>
+        {{ '最大人数: ' + team.maxNum }}
+      </div>
+      <!-- 有过期时间才展示 -->
+      <div v-if="team.expireTime">
+        {{ '过期时间: ' + team.expireTime }}
+      </div>
+      <div>
+        {{ '创建时间: ' + team.createTime }}
+      </div>
+      </template>
     <template #footer>
-      <van-button size="mini">联系我</van-button>
+      <van-button size="small" type="primary"  plain @click="doJoinTeam(team.id)">加入队伍</van-button>
     </template>
   </van-card>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { showFailToast, showSuccessToast } from "vant";
+import { teamStatusEnum } from "../constants/team";
 import {TeamType} from "../models/team";
+import myAxios from "../plugins/myAxios";
+import weiwei from "../assets/weiwei.webp";
 
 // TypeScript 接口，约束组件接收的 props 结构：要求有一个 teamList 属性
 // teamList 类型为 UserType[]（UserType 类型的数组）
@@ -28,6 +46,7 @@ interface TeamCardListProps{
   teamList: TeamType[];
 }
 
+// 父传子，父组件用 :propName="变量" 传递，子组件用 defineProps 接收。数据流向是单向的：TeamPage → TeamCardList
 // 给父组件设置默认值，保证数据不为空
 // 泛型参数 TeamCardListProps 让 TypeScript 对传入的 props 做类型检查
 // withDefaults 是 Vue 3.3+ 提供的函数，用于给泛型形式的 defineProps 设置默认值。
@@ -39,10 +58,35 @@ const props= withDefaults(defineProps<TeamCardListProps>(),{ // 编译器宏，�
   teamList: [] as TeamType[] // 告诉编译器"这个空数组当作 UserType[]
 });
 
+
+/**
+ * 加入队伍
+ */
+const doJoinTeam = async (id:number)=>{
+  const res = await myAxios.post('/team/join',{
+    teamId:id,
+  })
+  if(res?.code===0){
+    showSuccessToast('加入成功')
+  }else{
+    showFailToast('加入失败' + (res.description?`,${res.description}`:''));
+  }
+}
+
+
 </script>
 <style scoped>
   /* 标签颜色*/
   /* .van-tag--danger.van-tag--plain {
     color: #2b00ff;
   } */
+  /* 
+  scoped 样式穿透，去修改子组件内部 .van-image__img 元素的样式
+  scoped 默认只能修改当前组件的元素，子组件内部的样式是改不到的。:deep() 就是用来打破这个限制的
+  */
+  #teamCardList :deep(.van-image__img) { 
+  height: 118px;
+  width: 88px;
+  object-fit: unset;
+}
 </style>

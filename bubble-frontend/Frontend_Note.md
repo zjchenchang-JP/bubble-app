@@ -750,3 +750,67 @@ const resetForm = () => {
   addTeamData.value = {...initFormData}  // 恢复到初始状态
 }
 ```
+
+---
+# 2026/05/07
+## Vue 页面间传数据的 4 种方式
+
+### 1. URL 路由参数（跳转时携带少量数据）
+
+```js
+// 传递
+router.push({ path: '/team/detail', query: { id: 123 } })
+// 或
+router.push({ name: 'teamDetail', params: { id: 123 } })
+
+// 接收
+const route = useRoute()
+const id = route.query.id  // query 方式
+const id = route.params.id // params 方式
+```
+
+### 2. 状态管理 Pinia（多组件共享数据，最常用）
+
+```js
+// store/teamStore.ts
+export const useTeamStore = defineStore('team', () => {
+  const teamList = ref([])
+  return { teamList }
+})
+
+// 页面A：写入
+const teamStore = useTeamStore()
+teamStore.teamList = [...]
+
+// 页面B：读取
+const teamStore = useTeamStore()
+console.log(teamStore.teamList)
+```
+
+### 3. localStorage / sessionStorage（持久化，刷新不丢失）
+
+```js
+// 写入
+localStorage.setItem('teamData', JSON.stringify(data))
+// 读取
+const data = JSON.parse(localStorage.getItem('teamData'))
+```
+
+### 4. Provide-Inject（祖先与后代组件通信）
+
+```js
+// 祖先组件 provide
+provide('teamData', teamList)
+
+// 后代组件 inject
+const teamData = inject('teamData')
+```
+
+### 选择建议
+
+| 场景 | 推荐方式 |
+|---|---|
+| 传一两个字段（如 id） | 路由参数 |
+| 多个页面共享、频繁更新 | Pinia |
+| 需要持久化、刷新不丢 | localStorage |
+| 父子组件传数据 | props / emit |
