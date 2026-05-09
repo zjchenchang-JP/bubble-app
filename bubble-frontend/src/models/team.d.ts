@@ -8,6 +8,7 @@ import {CurrentUser} from "./user";
  */
 export type TeamType = {
     id: number;
+    userId:number;
     name: string;
     description: string;
     expireTime?: Date; 
@@ -18,5 +19,6 @@ export type TeamType = {
     createTime: Date;
     updateTime: Date;
     createUser?: UserType;
+    // 已加入队伍人数
     hasJoinNum?: number;
 };

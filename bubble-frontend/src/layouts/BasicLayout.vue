@@ -28,7 +28,9 @@ const onClickSearch = () => {
 };
 
 // 默认选中 高亮
-const onChange = (index: any) => showToast(`标签 ${index}`);
+// 底部 van-tabbar 的 @change 事件触发时，会弹出 toast 显示 "标签 " + tab的name。
+// 而每个 van-tabbar-item 的 name 分别是 "index"、"team"、"user"，所以切换时就会弹出"标签index"、"标签team"、"标签user"
+// const onChange = (index: any) => showToast(`标签 ${index}`);
 
 </script>
 

@@ -28,6 +28,10 @@
       </template>
     <template #footer>
       <van-button size="small" type="primary"  plain @click="doJoinTeam(team.id)">加入队伍</van-button>
+      <!-- 队伍创建人才显示 更新队伍 按钮 -->
+      <van-button v-if="team.userId === currentUser?.id" size="small" plain
+                    @click="doUpdateTeam(team.id)">更新队伍
+        </van-button>
     </template>
   </van-card>
   </div>
@@ -39,6 +43,9 @@ import { teamStatusEnum } from "../constants/team";
 import {TeamType} from "../models/team";
 import myAxios from "../plugins/myAxios";
 import weiwei from "../assets/weiwei.webp";
+import { ref,onMounted } from "vue";
+import { getCurrentUser } from "../services/user";
+import { useRouter } from "vue-router";
 
 // TypeScript 接口，约束组件接收的 props 结构：要求有一个 teamList 属性
 // teamList 类型为 UserType[]（UserType 类型的数组）
@@ -72,6 +79,26 @@ const doJoinTeam = async (id:number)=>{
     showFailToast('加入失败' + (res.description?`,${res.description}`:''));
   }
 }
+
+/**
+ * 更新队伍
+ */
+const currentUser = ref()
+const router = useRouter()
+// 跳转到队伍更新页
+const doUpdateTeam = (id:number) => {
+  router.push({
+    path:'/team/update',
+    query:{
+      id,
+    },
+  })
+}
+
+onMounted(async () =>{
+  currentUser.value = await getCurrentUser();
+})
+
 
 
 </script>

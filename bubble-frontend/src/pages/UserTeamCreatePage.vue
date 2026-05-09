@@ -1,8 +1,7 @@
 <template>
-  <div id="teamPage">
+  <div id="userTeamCreatePage">
     <van-search v-model="searchText" placeholder="搜索队伍" @search="onSearch" />
     <van-button type="primary" @click="doJoinTeam">创建队伍</van-button>
-    <!-- 挂载子组件 -->
     <team-card-list :teamList="teamList" />
     <van-empty v-if="!teamList || teamList.length < 1" description="没有数据" />
   </div>
@@ -19,16 +18,16 @@ const router = useRouter();
 const teamList = ref([]);
 const searchText = ref('')
 
-
 const doJoinTeam = () => {
   router.push({
     path: "/team/add",
   });
 };
 
+
 // 抽取公共函数；搜索框和挂载本质都是按条件查询队伍
 const listTeam = async (val = '') => {
-  const res = await myAxios.post('/team/list',{
+  const res = await myAxios.get('/team/list/my/create',{
     searchText:val,
   })
   if(res?.code===0){

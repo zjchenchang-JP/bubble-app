@@ -1,8 +1,6 @@
 <template>
-  <div id="teamPage">
+  <div id="userTeamJoinPage">
     <van-search v-model="searchText" placeholder="搜索队伍" @search="onSearch" />
-    <van-button type="primary" @click="doJoinTeam">创建队伍</van-button>
-    <!-- 挂载子组件 -->
     <team-card-list :teamList="teamList" />
     <van-empty v-if="!teamList || teamList.length < 1" description="没有数据" />
   </div>
@@ -20,15 +18,8 @@ const teamList = ref([]);
 const searchText = ref('')
 
 
-const doJoinTeam = () => {
-  router.push({
-    path: "/team/add",
-  });
-};
-
-// 抽取公共函数；搜索框和挂载本质都是按条件查询队伍
 const listTeam = async (val = '') => {
-  const res = await myAxios.post('/team/list',{
+  const res = await myAxios.get('/team/list/my/join',{
     searchText:val,
   })
   if(res?.code===0){
@@ -45,10 +36,15 @@ const onSearch = (val) => {
 }
 
 // 进入页面 挂载队伍信息
-onMounted(()=>{
-  listTeam()
-});
+// 页面加载时只触发一次
+onMounted( () => {
+  listTeam();
+})
 
 </script>
 
-<style scoped></style>
+<style scoped>
+#teamPage{
+
+}
+</style>
