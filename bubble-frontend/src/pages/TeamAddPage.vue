@@ -130,7 +130,7 @@ const onSubmit = async () =>{
       replace:true
     })
   } else{
-    showFailToast("创建失败")
+    showFailToast(`创建失败,${res?.description}`)
   }
 
 }

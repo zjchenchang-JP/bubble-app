@@ -2,7 +2,8 @@
   <div id="userTeamCreatePage">
     <van-search v-model="searchText" placeholder="搜索队伍" @search="onSearch" />
     <van-button type="primary" @click="doJoinTeam">创建队伍</van-button>
-    <team-card-list :teamList="teamList" />
+    <!-- 监听 refresh 事件：子组件操作成功后触发，父组件重新请求列表实现即时更新 -->
+    <team-card-list :teamList="teamList" @refresh="listTeam" />
     <van-empty v-if="!teamList || teamList.length < 1" description="没有数据" />
   </div>
 </template>

@@ -4,5 +4,5 @@
 export const teamStatusEnum: Record<number, string> = {
   0:'公开',
   1:'私有',
-  3:'加密',
+  2:'加密',
 }

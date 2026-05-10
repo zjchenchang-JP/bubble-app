@@ -31,7 +31,15 @@
       <!-- 队伍创建人才显示 更新队伍 按钮 -->
       <van-button v-if="team.userId === currentUser?.id" size="small" plain
                     @click="doUpdateTeam(team.id)">更新队伍
-        </van-button>
+      </van-button>
+      <!-- 仅已加入队伍 可见 -->
+      <van-button v-if="team.hasJoin" size="small" plain @click="doQuitTeam(team.id)">
+        退出队伍
+      </van-button>
+      <!-- 队伍创建人才显示 解散队伍 按钮 -->
+      <van-button v-if="team.userId === currentUser?.id" size="small" plain
+                    @click="doDeleteTeam(team.id)">解散队伍
+      </van-button>
     </template>
   </van-card>
   </div>
@@ -52,6 +60,12 @@ import { useRouter } from "vue-router";
 interface TeamCardListProps{
   teamList: TeamType[];
 }
+
+// 子 → 父通信：子组件操作成功后，通过 emit 通知父组件刷新列表
+// 用法：const emit = defineEmits(['事件名'])，然后 emit('事件名') 触发
+// 加入/退出/解散操作成功后，调用 emit('refresh') 通知父组件
+// 数据流：子组件操作成功 → emit('refresh') → 父组件监听到 → 调用各自的 listTeam() 重新请求接口 → teamList 响应式更新 → 页面自动刷新
+const emit = defineEmits(['refresh']);
 
 // 父传子，父组件用 :propName="变量" 传递，子组件用 defineProps 接收。数据流向是单向的：TeamPage → TeamCardList
 // 给父组件设置默认值，保证数据不为空
@@ -75,6 +89,8 @@ const doJoinTeam = async (id:number)=>{
   })
   if(res?.code===0){
     showSuccessToast('加入成功')
+    // 加入成功后通知父组件重新请求列表，保证数据即时更新
+    emit('refresh')
   }else{
     showFailToast('加入失败' + (res.description?`,${res.description}`:''));
   }
@@ -94,6 +110,37 @@ const doUpdateTeam = (id:number) => {
     },
   })
 }
+
+/**
+ * 退出队伍
+ */
+const doQuitTeam = async (id:number)=>{
+  const res = await myAxios.post('/team/quit',{
+    teamId:id,
+  })
+  if(res?.code===0){
+    showSuccessToast('退出成功')
+    // 退出成功后通知父组件重新请求列表，保证数据即时更新
+    emit('refresh')
+  }else{
+    showFailToast('退出失败' + (res.description?`,${res.description}`:''));
+  }
+}
+
+/**
+ * 解散队伍
+ */
+const doDeleteTeam = async (id:number)=>{
+  const res = await myAxios.delete(`/team/delete/${id}`)
+  if(res?.code===0){
+    showSuccessToast('解散成功')
+    // 解散成功后通知父组件重新请求列表，保证数据即时更新
+    emit('refresh')
+  }else{
+    showFailToast('解散失败' + (res.description?`,${res.description}`:''));
+  }
+}
+
 
 onMounted(async () =>{
   currentUser.value = await getCurrentUser();

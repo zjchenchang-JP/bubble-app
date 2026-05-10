@@ -21,4 +21,6 @@ export type TeamType = {
     createUser?: UserType;
     // 已加入队伍人数
     hasJoinNum?: number;
+    // 当前用户是否已加入队伍
+    hasJoin?:boolean
 };

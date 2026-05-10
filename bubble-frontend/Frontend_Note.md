@@ -814,3 +814,72 @@ const teamData = inject('teamData')
 | 多个页面共享、频繁更新 | Pinia |
 | 需要持久化、刷新不丢 | localStorage |
 | 父子组件传数据 | props / emit |
+
+---
+# 2026/05/10
+
+## 子组件操作后即时刷新列表 — emit 通知父组件重新请求
+
+### 问题
+
+TeamCardList 子组件中执行加入/退出/解散操作后，虽然接口返回成功，但页面不会即时更新队伍列表，需要手动刷新浏览器才能看到最新数据。
+
+### 原因
+
+子组件的 `teamList` 是通过 `props` 从父组件传入的，Vue 的 props 是**单向数据流**（父 → 子），子组件不能直接修改 props 的值。操作成功后只是 toast 提示，没有任何逻辑去更新列表数据。
+
+### 解决方案：emit 事件通知父组件刷新
+
+核心思路：**子组件操作成功后 `emit('refresh')`，父组件监听到事件后调用自己的 `listTeam()` 重新请求接口**。
+
+```
+数据流：子组件操作成功 → emit('refresh') → 父组件监听到 → 调用 listTeam() → teamList 响应式更新 → 页面自动刷新
+```
+
+#### 子组件改动（TeamCardList.vue）
+
+```typescript
+// 1. 声明子组件可以向父组件发送的事件
+const emit = defineEmits(['refresh']);
+
+// 2. 操作成功后触发事件
+const doQuitTeam = async (id: number) => {
+  const res = await myAxios.post('/team/quit', { teamId: id })
+  if (res?.code === 0) {
+    showSuccessToast('退出成功')
+    emit('refresh')  // 通知父组件：数据变了，重新拉列表
+  } else {
+    showFailToast('退出失败')
+  }
+}
+// doJoinTeam、doDeleteTeam 同理
+```
+
+#### 父组件改动（TeamPage / UserTeamCreatePage / UserTeamJoinPage）
+
+```html
+<!-- 父组件监听 refresh 事件，触发时调用 listTeam 重新请求数据 -->
+<team-card-list :teamList="teamList" @refresh="listTeam" />
+```
+
+三个父页面各自请求不同的接口，互不影响：
+- TeamPage → `/team/list`
+- UserTeamCreatePage → `/team/list/my/create`
+- UserTeamJoinPage → `/team/list/my/join`
+
+### 为什么不直接在前端删数组项
+
+退出队伍可能导致连锁变化：只剩一人时队伍自动解散、解散队伍会删除所有关联记录。前端很难模拟这些后端逻辑，重新拉列表最准确，也最简单。
+
+### 性能
+
+不需要担心。用户最多加入 5 个队伍，列表数据量很小，且只有用户主动操作时才触发一次请求。
+
+### emit 与 props 的关系
+
+```
+props：  父 → 子（传递数据）    <team-card-list :teamList="teamList" />
+emit：   子 → 父（传递事件）    @refresh="listTeam"
+```
+
+两者配合使用，构成 Vue 父子组件通信的标准模式：父组件通过 props 把数据传给子组件，子组件通过 emit 把操作结果通知父组件，父组件再更新数据，数据变化通过 props 自动回流到子组件。
