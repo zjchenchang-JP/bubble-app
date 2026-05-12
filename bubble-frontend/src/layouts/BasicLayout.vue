@@ -1,5 +1,5 @@
 <template>
-    <van-nav-bar title="标题" left-text="" left-arrow @click-left="onClickLeft" @click-right="onClickSearch">
+    <van-nav-bar :title="title" left-text="" left-arrow @click-left="onClickLeft" @click-right="onClickSearch">
         <template #right>
             <van-icon name="search" size="18" />
         </template>
@@ -19,6 +19,16 @@ import { showToast } from 'vant';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter()
+const DEFAULT_TITLE='伙伴匹配'
+const title = ref(DEFAULT_TITLE)
+
+/**
+ * 根据路由切换 标题
+ */
+router.beforeEach((to,from)=>{
+  title.value = (to.meta.title as string) ?? DEFAULT_TITLE;
+})
+
 const onClickLeft = () => {
     // router.push('/') // 回到主页
     router.back() // 回到上一页
