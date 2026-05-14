@@ -18,7 +18,8 @@ app.use(Vant)
 
 
 const router = VueRouter.createRouter({
-    history: VueRouter.createWebHashHistory(),
+    // history: VueRouter.createWebHashHistory(),
+    history:VueRouter.createWebHistory(),
     routes,// routes: routes 缩写
 })
 app.use(router)

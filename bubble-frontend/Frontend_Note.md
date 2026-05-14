@@ -883,3 +883,69 @@ emit：   子 → 父（传递事件）    @refresh="listTeam"
 ```
 
 两者配合使用，构成 Vue 父子组件通信的标准模式：父组件通过 props 把数据传给子组件，子组件通过 emit 把操作结果通知父组件，父组件再更新数据，数据变化通过 props 自动回流到子组件。
+
+---
+# 2026/05/14
+
+## Vue Router 两种 History 模式区别
+
+### Hash 模式 — `createWebHashHistory()`
+- URL 形如 `http://example.com/#/user`
+- 路由信息放在 `#` 后面，浏览器不会将 `#` 后的内容发送到服务器
+- **优点**：部署简单，服务器不需要额外配置，刷新页面不会 404
+- **缺点**：URL 不美观，对 SEO 不友好
+
+### History 模式 — `createWebHistory()`
+- URL 形如 `http://example.com/user`
+- 利用浏览器原生的 `pushState` / `replaceState` API，URL 更干净
+- **优点**：URL 美观，利于 SEO
+- **缺点**：部署时服务器必须配置将所有路由 fallback 到 `index.html`，否则刷新非根路径页面会 404
+
+### 为什么 History 模式需要服务器 fallback 配置
+
+- Hash 模式 → 浏览器发请求时只会向服务器请求 `/`，`#` 后的内容浏览器自己处理，服务器根本不知道 `/user` 的存在
+- History 模式 → 用户刷新时，浏览器会把 URL 里的路径当成真实路径请求服务器，但服务器上并没有 `/user` 这个文件，所以返回 404
+
+**解决办法**：告诉服务器不管收到什么路径的请求，都返回 `index.html`，让前端 Vue Router 自己解析 URL 决定显示哪个页面。
+
+### Nginx fallback 配置
+
+```nginx
+location / {
+  try_files $uri $uri/ /index.html;
+}
+```
+
+`$uri` 是 Nginx 的变量，代表用户当前请求的路径（如 `/user`）。
+
+这条规则按顺序尝试：
+1. `$uri` — 先找有没有这个路径对应的文件
+2. `$uri/` — 再找有没有这个目录
+3. `/index.html` — 都找不到 → fallback（兜底）到 index.html
+
+fallback = 兜底方案，即"最后实在找不到，就返回 index.html"。直接照抄即可，不需要改。
+
+---
+## 未登录拦截逻辑
+
+```typescript
+// 添加响应拦截器
+myAxios.interceptors.response.use(function (response) {
+    // 对响应数据做点什么
+    console.log("我收到你的响应了,",response)
+    // 未登录则跳转到登录页
+    if(response?.data?.code === 40100){
+      const redirectUrl = window.location.href
+      window.location.href = `/user/login?redirectUrl=${redirectUrl}`
+    }
+    return response.data;
+}, function (error) {
+    // 响应错误处理
+    return Promise.reject(error);
+});
+```
+
+- `40100` 是后端设计好的状态码，表示用户未登录（未授权）
+- `window.location.href` 记住用户当前所在的页面 URL
+- 跳转到登录页，并把当前页面地址通过 `redirectUrl` 参数传过去
+- 目的：登录成功后可以跳回用户原来想访问的页面，而不是登录后总是回到首页
