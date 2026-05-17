@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/user/login', meta: { title: '登录' }, component: UserLoginPage },
   { path: '/user/update', meta: { title: '更新信息' }, component: UserUpdatePage },
   { path: '/user/team/join', meta: { title: '加入队伍' }, component: UserTeamJoinPage },
-  { path: '/user/team/create', meta: { title: '创建队伍' }, component: UserTeamCreatePage },
+  { path: '/user/team/create', meta: { title: '我创建的队伍' }, component: UserTeamCreatePage },
 
 ]
 

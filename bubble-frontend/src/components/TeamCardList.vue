@@ -16,7 +16,7 @@
     </template>
     <template #bottom>
       <div>
-        {{ '最大人数: ' + team.maxNum }}
+        {{ `队伍人数： ${team.hasJoinNum}/${team.maxNum} ` }}
       </div>
       <!-- 有过期时间才展示 -->
       <div v-if="team.expireTime">
@@ -28,7 +28,7 @@
       </template>
     <template #footer>
       <!-- 仅未加入队伍可见 -->
-      <van-button v-if="!team.hasJoin" size="small" type="primary"  plain @click="doJoinTeam(team.id)">
+      <van-button v-if="!team.hasJoin" size="small" type="primary"  plain @click="preJoinTeam(team)">
         加入队伍
       </van-button>
       <!-- 队伍创建人才显示 更新队伍 按钮 -->
@@ -47,12 +47,16 @@
     </template>
   </van-card>
   </div>
+  <!-- 加入加密队伍 要求输入密码 -->
+  <van-dialog v-model:show="showPasswordDialog" title="请输入密码" show-cancel-button @confirm="doJoinTeam" @cancel="doJoinCancel">
+    <van-field v-model="password" placeholder="请输入密码"/>
+  </van-dialog>
 </template>
 
 <script setup lang="ts">
 import { showFailToast, showSuccessToast } from "vant";
 import { teamStatusEnum } from "../constants/team";
-import {TeamType} from "../models/team";
+import type {TeamType} from "../models/team";
 import myAxios from "../plugins/myAxios";
 import weiwei from "../assets/weiwei.webp";
 import { ref,onMounted } from "vue";
@@ -65,7 +69,12 @@ interface TeamCardListProps{
   teamList: TeamType[];
 }
 
-// 子 → 父通信：子组件操作成功后，通过 emit 通知父组件刷新列表
+const showPasswordDialog = ref(false);
+const password = ref('');
+const joinTeamId = ref(0);
+
+
+// 子 → 父通信：子组件操作成功后，通过 emit 通知父组件刷新列表；不用手动刷新即可更新页面数据
 // 用法：const emit = defineEmits(['事件名'])，然后 emit('事件名') 触发
 // 加入/退出/解散操作成功后，调用 emit('refresh') 通知父组件
 // 数据流：子组件操作成功 → emit('refresh') → 父组件监听到 → 调用各自的 listTeam() 重新请求接口 → teamList 响应式更新 → 页面自动刷新
@@ -83,18 +92,43 @@ const props= withDefaults(defineProps<TeamCardListProps>(),{ // 编译器宏，�
   teamList: [] as TeamType[] // 告诉编译器"这个空数组当作 UserType[]
 });
 
+/**
+ * 如果公开队伍，则直接加入，否则弹出 输出密码提示框
+ * @param team 
+ */
+const preJoinTeam = (team: TeamType) => {
+  joinTeamId.value = team.id
+  if(team.status === 0){
+    doJoinTeam()
+  } else{
+    showPasswordDialog.value = true
+  }
+}
+
+/**
+ * 状态归零 处置
+ */
+const doJoinCancel = () => {
+  joinTeamId.value = 0;
+  password.value = '';
+}
 
 /**
  * 加入队伍
  */
-const doJoinTeam = async (id:number)=>{
+const doJoinTeam = async ()=>{
+  if(!joinTeamId.value){
+    return
+  }
   const res = await myAxios.post('/team/join',{
-    teamId:id,
+    teamId:joinTeamId.value,
+    password:password.value
   })
   if(res?.code===0){
     showSuccessToast('加入成功')
     // 加入成功后通知父组件重新请求列表，保证数据即时更新
     emit('refresh')
+    doJoinCancel()// 清理密码输入框状态
   }else{
     showFailToast('加入失败' + (res.description?`,${res.description}`:''));
   }

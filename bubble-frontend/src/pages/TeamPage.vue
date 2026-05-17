@@ -2,7 +2,7 @@
   <div id="teamPage">
     <van-search v-model="searchText" placeholder="搜索队伍" @search="onSearch" />
     <van-tabs v-model:active="active" @change="onTabChange">
-      <van-tab title="公开" name="pubulic" />
+      <van-tab title="公开" name="public" />
       <van-tab title="加密" name="private" />
     </van-tabs>
     <van-button class="add-button" type="primary" icon="plus" @click="toAddTeam" />
@@ -47,14 +47,13 @@ const toAddTeam = () => {
 // 抽取公共函数；搜索框和挂载本质都是按条件查询队伍
 const listTeam = async (val = '', status) => {
   const params = { searchText: val, pageNum: 1 }
-  // 请求不带 status → 后端 statusEnum == null → 有 searchText 查公开+加密
+  // 如果请求不带 status → 后端 statusEnum == null → 有 searchText 查公开+加密
   if (status !== undefined) {
     params.status = status
   }
   const res = await myAxios.post('/team/list', params)
   if(res?.code===0){
-    teamList.value = res.data;
-  } else {
+    teamList.value = res.data;  } else {
     showFailToast("队伍信息加载失败");
   }
 }

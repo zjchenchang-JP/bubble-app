@@ -1,8 +1,17 @@
 import axios from "axios";
 
+/**
+ * 
+ * const isDev = import.meta.env.DEV; // true = 开发环境, false = 生产环境
+ * const myAxios = axios.create({
+    baseURL: isDev ? 'http://localhost:8080/api' : '线上生产环境地址',
+});
+ */
+
 // Set config defaults when creating the instance
 const myAxios = axios.create({
-    baseURL: 'http://localhost:8080/api',
+  // 多环境配置
+  baseURL: import.meta.env.VITE_APP_BASE_URL,
 });
 
 // 前端请求携带Cookie

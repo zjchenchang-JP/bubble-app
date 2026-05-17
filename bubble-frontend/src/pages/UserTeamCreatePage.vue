@@ -1,7 +1,8 @@
 <template>
   <div id="userTeamCreatePage">
     <van-search v-model="searchText" placeholder="搜索队伍" @search="onSearch" />
-    <van-button type="primary" @click="doJoinTeam">创建队伍</van-button>
+    <!-- <van-button type="primary" @click="doJoinTeam">创建队伍</van-button> -->
+    <van-button class="add-button" type="primary" icon="plus" @click="toAddTeam" />
     <!-- 监听 refresh 事件：子组件操作成功后触发，父组件重新请求列表实现即时更新 -->
     <team-card-list :teamList="teamList" @refresh="listTeam" />
     <van-empty v-if="!teamList || teamList.length < 1" description="没有数据" />
@@ -14,12 +15,13 @@ import { useRouter } from "vue-router";
 import myAxios from "../plugins/myAxios";
 import TeamCardList from "../components/TeamCardList.vue";
 import { showFailToast } from "vant";
+import '../global.css'
 
 const router = useRouter();
 const teamList = ref([]);
 const searchText = ref('')
 
-const doJoinTeam = () => {
+const toAddTeam = () => {
   router.push({
     path: "/team/add",
   });

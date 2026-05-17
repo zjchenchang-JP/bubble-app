@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import {CurrentUser} from "../models/user";
+import type {CurrentUser} from "../models/user";
 
 // TypeScript 接口，约束组件接收的 props 结构：要求有一个 userList 属性
 // userList 类型为 UserType[]（UserType 类型的数组）

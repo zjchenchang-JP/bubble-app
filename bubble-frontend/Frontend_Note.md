@@ -949,3 +949,103 @@ myAxios.interceptors.response.use(function (response) {
 - `window.location.href` 记住用户当前所在的页面 URL
 - 跳转到登录页，并把当前页面地址通过 `redirectUrl` 参数传过去
 - 目的：登录成功后可以跳回用户原来想访问的页面，而不是登录后总是回到首页
+
+---
+# 2026/05/17
+
+## Vite 多环境配置（.env 文件）
+
+### 原理
+
+Vite 启动时（`npm run dev` 或 `npm run build`），自动读取项目根目录下匹配当前模式的 `.env` 文件。只有以 `VITE_` 开头的变量才会被注入到前端代码中，其余变量被忽略（防止敏感信息泄漏到前端）。
+
+代码中通过 `import.meta.env.VITE_XXX` 访问，Vite 在构建时**直接替换成对应字符串**，最终打包产物里不存在 `import.meta.env`。
+
+### 文件加载顺序
+
+`npm run dev`（mode = `development`）：
+
+1. `.env` — 所有环境共享
+2. `.env.local` — 所有环境共享，git 忽略（本地个人配置）
+3. `.env.development` — 开发环境专属
+4. `.env.development.local` — 开发环境本地覆盖
+
+`npm run build`（mode = `production`）同理，读取 `.env.production`。
+
+后加载的覆盖先加载的同名变量。
+
+### 项目中的配置
+
+```
+bubble-frontend/
+├── .env                    # VITE_APP_TITLE=Bubble
+├── .env.development        # VITE_APP_BASE_URL=http://localhost:8080/api
+└── .env.production         # VITE_APP_BASE_URL=/api
+```
+
+使用方式（myAxios.ts）：
+```typescript
+const myAxios = axios.create({
+    baseURL: import.meta.env.VITE_APP_BASE_URL,
+});
+```
+
+### Vite 内置环境变量
+
+| 变量 | 说明 |
+|---|---|
+| `import.meta.env.MODE` | 当前模式，`'development'` 或 `'production'` |
+| `import.meta.env.DEV` | 是否开发环境，`true` / `false` |
+| `import.meta.env.PROD` | 是否生产环境，`true` / `false` |
+
+这些内置变量不需要在 `.env` 文件中定义。
+
+### 与 webpack 的区别
+
+webpack / CRA 用 `process.env.NODE_ENV`，Vite 没有 `process.env`，统一用 `import.meta.env`。
+
+### 为什么不用 isDev 判断方式
+
+```typescript
+// 可行，但环境多了要改代码
+const isDev = import.meta.env.DEV;
+const myAxios = axios.create({
+    baseURL: isDev ? 'http://localhost:8080/api' : '/api',
+});
+```
+
+`.env` 文件方式更易维护：新增环境（如 staging）只需加一个 `.env.staging` 文件，不用改代码。
+
+---
+
+## 部署到 Vercel
+
+### 安装 Vercel CLI
+
+```bash
+npm i -g vercel
+```
+
+### 首次部署
+
+```bash
+cd bubble-frontend
+vercel deploy dist --yes
+```
+
+首次使用会提示登录，浏览器自动打开 Vercel 授权页面，点击 **Authorize** 即可。`--yes` 跳过交互确认。
+
+### 后续更新
+
+每次代码改完重新打包后：
+
+```bash
+cd bubble-frontend
+npm run build
+vercel deploy dist --yes
+```
+
+### 注意事项
+
+- 生产环境的 `VITE_APP_BASE_URL` 必须是真实后端域名，不能是 `localhost`
+- 打包产物默认输出到 `bubble-frontend/dist/` 目录，可在 `vite.config.ts` 中通过 `build.outDir` 修改

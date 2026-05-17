@@ -76,5 +76,4 @@ create table tag
 
 # https://t.zsxq.com/0emozsIJh
 
-create index idx_userId
-    on tag (userId);
+create index idx_userId on tag (userId);

@@ -168,6 +168,64 @@ if (statusEnum == null) {
 }
 ```
 
+### 版本二引发的连锁问题
+
+版本二上线后，`UserTeamCreatePage`（我创建的队伍页面）只能查到公开队伍。
+
+**原因**：`listMyCreateTeams` 内部调用 `listTeams`，构造的 `TeamQuery` 只设了 `userId = loginUserId`，没设 `status` 也没设 `searchText`：
+
+```java
+// TeamServiceImpl.listMyCreateTeams
+public List<TeamUserVO> listMyCreateTeams() {
+    Long userId = RequestHolder.getUserId();
+    TeamQuery teamQuery = new TeamQuery();
+    teamQuery.setUserId(userId);  // 只设了 userId
+    return listTeams(teamQuery, false);  // status=null, searchText=null
+}
+```
+
+进入 `listTeams` → `statusEnum == null` → `searchText` 为空 → 只查公开。创建者看不到自己创建的加密/私密队伍。
+
+### 版本三：组合版本一和版本二
+
+初步想法是恢复版本一的 `queryUserId == loginUserId` 不限状态逻辑，但担心会导致 TeamPage 搜索问题复发。
+
+**分析：不会复发**，因为两个页面的调用路径完全隔离：
+
+| 调用来源 | 是否传 userId | 是否传 status | 会触发哪条分支 |
+|---|---|---|---|
+| TeamPage 默认加载 | 不传（null） | 不传（null） | queryUserId ≠ loginUserId → searchText 为空 → 只查公开 |
+| TeamPage 搜索 | 不传（null） | 不传（null） | queryUserId ≠ loginUserId → 有 searchText → 公开+加密 |
+| TeamPage tab 切换 | 不传（null） | 0 或 2 | statusEnum != null → 按指定状态查 |
+| UserTeamCreatePage | loginUserId | 不传（null） | queryUserId == loginUserId → **不限状态** |
+
+TeamPage 从不传 `userId`，所以 `queryUserId` 始终是 null，永远不会匹配 `queryUserId == loginUserId`。只有 `listMyCreateTeams` 会显式设置 `userId = loginUserId`。
+
+### 最终后端逻辑（版本三）
+
+```java
+if (statusEnum == null) {
+    if (Objects.equals(queryUserId, loginUserId)) {
+        // 查自己创建的队伍：不限制状态（仅 listMyCreateTeams 触发，TeamPage 不传 userId）
+    } else {
+        String searchText = (teamQuery != null) ? teamQuery.getSearchText() : null;
+        if (StringUtils.isNotBlank(searchText)) {
+            // 关键词搜索：查公开 + 加密
+            queryWrapper.and(qw -> qw.eq(Team::getStatus, TeamStatusEnum.PUBLIC.getValue())
+                    .or().eq(Team::getStatus, TeamStatusEnum.SECRET.getValue()));
+        } else {
+            // 默认加载：只查公开
+            queryWrapper.eq(Team::getStatus, TeamStatusEnum.PUBLIC.getValue());
+        }
+    }
+} else {
+    if (!isAdmin && statusEnum.equals(TeamStatusEnum.PRIVATE)) {
+        throw new BusinessException(ErrorCode.NO_AUTH, "只有管理员才能查看私有队伍");
+    }
+    queryWrapper.eq(Team::getStatus, statusEnum.getValue());
+}
+```
+
 ### 前端修复
 
 ```js
