@@ -1,11 +1,7 @@
 # 数据库初始化
-# @author <a href="https://github.com/liyupi">程序员鱼皮</a>
-# @from <a href="https://yupi.icu">编程导航知识星球</a>
-create
-database if not exists yupao;
+create database if not exists yupao;
 
-use
-yupao;
+use yupao;
 
 -- 用户表
 create table user
